@@ -6,6 +6,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -94,12 +96,21 @@ export default function Index() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [bookingCheckIn, setBookingCheckIn] = useState<Date>();
   const [bookingCheckOut, setBookingCheckOut] = useState<Date>();
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
+  const [propertyType, setPropertyType] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredListings = mockListings.filter(listing => {
     if (searchLocation && !listing.location.toLowerCase().includes(searchLocation.toLowerCase())) {
       return false;
     }
     if (guests > listing.guests) {
+      return false;
+    }
+    if (listing.price < priceRange[0] || listing.price > priceRange[1]) {
+      return false;
+    }
+    if (propertyType !== 'all' && listing.type !== propertyType) {
       return false;
     }
     return true;
@@ -202,7 +213,71 @@ export default function Index() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold mb-6 font-heading">Объявления в Санкт-Петербурге</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold font-heading">Объявления в Санкт-Петербурге</h2>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2"
+            >
+              <Icon name="SlidersHorizontal" size={18} />
+              Фильтры
+            </Button>
+          </div>
+
+          {showFilters && (
+            <Card className="mb-6 animate-fade-in">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">Тип жилья</label>
+                    <Select value={propertyType} onValueChange={setPropertyType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Все типы" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Все типы</SelectItem>
+                        <SelectItem value="Квартира">Квартира</SelectItem>
+                        <SelectItem value="Студия">Студия</SelectItem>
+                        <SelectItem value="Отель">Отель</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">
+                      Цена за ночь: ₽{priceRange[0].toLocaleString()} - ₽{priceRange[1].toLocaleString()}
+                    </label>
+                    <Slider
+                      min={0}
+                      max={10000}
+                      step={500}
+                      value={priceRange}
+                      onValueChange={(value) => setPriceRange(value as [number, number])}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 mt-4 pt-4 border-t">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setPriceRange([0, 10000]);
+                      setPropertyType('all');
+                    }}
+                  >
+                    Сбросить фильтры
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Найдено объявлений: {filteredListings.length}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredListings.map((listing) => (
               <Dialog key={listing.id} onOpenChange={(open) => !open && setSelectedListing(null)}>
