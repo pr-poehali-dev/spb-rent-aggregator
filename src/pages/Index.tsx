@@ -425,6 +425,7 @@ export default function Index() {
                   <Dialog key={listing.id} onOpenChange={(open) => !open && setSelectedListing(null)}>
                     <DialogTrigger asChild>
                       <Card 
+                        data-listing-id={listing.id}
                         className={`cursor-pointer transition-all duration-300 ${
                           hoveredListing === listing.id ? 'ring-2 ring-primary shadow-xl scale-[1.02]' : 'hover:shadow-lg'
                         }`}
@@ -612,20 +613,72 @@ export default function Index() {
                 ))}
               </div>
 
-              <div className="sticky top-4 h-[600px] bg-secondary rounded-lg overflow-hidden">
+              <div className="sticky top-4 h-[600px] bg-secondary rounded-lg overflow-hidden shadow-lg">
                 <div className="relative w-full h-full">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    src={`https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=59.9343,30.3351&zoom=12`}
-                  />
-                  <div className="absolute top-4 left-4 right-4 pointer-events-none">
-                    <Card className="pointer-events-auto">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-50 flex items-center justify-center">
+                    <div className="relative w-full h-full">
+                      {filteredListings.map((listing) => {
+                        const mapWidth = 100;
+                        const mapHeight = 100;
+                        const latRange = [59.90, 59.98];
+                        const lngRange = [30.25, 30.40];
+                        
+                        const x = ((listing.lng - lngRange[0]) / (lngRange[1] - lngRange[0])) * mapWidth;
+                        const y = ((latRange[1] - listing.lat) / (latRange[1] - latRange[0])) * mapHeight;
+                        
+                        return (
+                          <div
+                            key={listing.id}
+                            className={`absolute cursor-pointer transition-all duration-300 ${
+                              hoveredListing === listing.id ? 'z-50 scale-150' : 'z-10'
+                            }`}
+                            style={{
+                              left: `${x}%`,
+                              top: `${y}%`,
+                              transform: 'translate(-50%, -50%)'
+                            }}
+                            onMouseEnter={() => setHoveredListing(listing.id)}
+                            onMouseLeave={() => setHoveredListing(null)}
+                            onClick={() => {
+                              setSelectedListing(listing);
+                              const element = document.querySelector(`[data-listing-id="${listing.id}"]`);
+                              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                          >
+                            {hoveredListing === listing.id ? (
+                              <div className="bg-white rounded-lg shadow-xl p-3 min-w-[200px] animate-scale-in">
+                                <div className="flex gap-2 items-start">
+                                  <img 
+                                    src={listing.image} 
+                                    alt={listing.title}
+                                    className="w-16 h-16 object-cover rounded"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-xs line-clamp-1">{listing.title}</p>
+                                    <p className="text-xs text-muted-foreground">{listing.location}</p>
+                                    <p className="text-sm font-bold text-primary mt-1">₽{listing.price.toLocaleString()}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <div className="w-8 h-8 bg-primary rounded-full shadow-lg flex items-center justify-center border-2 border-white">
+                                  <span className="text-white text-xs font-bold">₽</span>
+                                </div>
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-primary"></div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  <div className="absolute top-4 left-4 right-4 pointer-events-none z-40">
+                    <Card className="pointer-events-auto bg-white/95 backdrop-blur-sm">
                       <CardContent className="p-3">
                         <p className="text-sm font-medium">📍 Найдено объектов: {filteredListings.length}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Наведите на объявление для подсветки</p>
+                        <p className="text-xs text-muted-foreground mt-1">Наведите на маркер для подробностей</p>
                       </CardContent>
                     </Card>
                   </div>
